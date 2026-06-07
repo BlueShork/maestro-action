@@ -1,0 +1,62 @@
+name: selftest
+
+on:
+  workflow_dispatch:
+
+jobs:
+  validation:
+    name: input validation (no quota)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: bad platform must fail fast
+        id: bad
+        continue-on-error: true
+        uses: ./
+        with:
+          api_key: ${{ secrets.MAESTRO_API_KEY }}
+          platform: nope
+          app: README.md
+          flow: examples/smoke.yaml
+      - name: assert the bad-platform step failed
+        run: |
+          if [[ "${{ steps.bad.outcome }}" != "failure" ]]; then
+            echo "::error::expected the bad-platform step to fail, got '${{ steps.bad.outcome }}'"
+            exit 1
+          fi
+          echo "validation correctly rejects an invalid platform"
+
+  e2e:
+    name: end-to-end submission
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: create a placeholder app
+        run: printf 'placeholder-not-a-real-apk' > app.apk
+      - name: run the action
+        id: maestro
+        continue-on-error: true
+        uses: ./
+        with:
+          api_key: ${{ secrets.MAESTRO_API_KEY }}
+          platform: android
+          app: app.apk
+          flow: examples/smoke.yaml
+      - name: assert the action ran end-to-end
+        run: |
+          echo "job_id=${{ steps.maestro.outputs.job_id }}"
+          echo "status=${{ steps.maestro.outputs.status }}"
+          echo "report_url=${{ steps.maestro.outputs.report_url }}"
+          if [[ -z "${{ steps.maestro.outputs.job_id }}" ]]; then
+            echo "::error::action produced no job_id (it did not reach finalize)"
+            exit 1
+          fi
+          case "${{ steps.maestro.outputs.status }}" in
+            passed|failed|error)
+              echo "action produced a terminal status: ${{ steps.maestro.outputs.status }}"
+              ;;
+            *)
+              echo "::error::unexpected status '${{ steps.maestro.outputs.status }}'"
+              exit 1
+              ;;
+          esac

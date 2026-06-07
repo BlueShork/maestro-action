@@ -1,0 +1,52 @@
+name: "MaestroDeck Cloud"
+description: "Run Maestro mobile tests on MaestroDeck Cloud (iOS or Android)"
+author: "MaestroDeck"
+branding:
+  icon: "smartphone"
+  color: "black"
+
+inputs:
+  api_key:
+    description: "MaestroDeck API key (mk_live_...). Pass it via a GitHub secret."
+    required: true
+  platform:
+    description: "ios / android"
+    required: true
+  app:
+    description: "Path to the .apk (ANDROID) or .app.zip (IOS)"
+    required: true
+  flow:
+    description: "Path or glob the Maestro .yaml flows files"
+    required: true
+  email:
+    description: "(optional) Report email, defaults to the account email"
+    required: false
+  timeout:
+    description: "(optional) Max seconds to wait for the result"
+    required: false
+    default: "1800"
+
+outputs:
+  job_id:
+    description: "The created job id"
+    value: ${{ steps.run.outputs.job_id }}
+  status:
+    description: "Final status: passed, failed or error"
+    value: ${{ steps.run.outputs.status }}
+  report_url:
+    description: "Link to the report in the dashboard"
+    value: ${{ steps.run.outputs.report_url }}
+
+runs:
+  using: composite
+  steps:
+    - id: run
+      shell: bash
+      run: ${{ github.action_path }}/run.sh
+      env:
+        API_KEY: ${{ inputs.api_key }}
+        PLATFORM: ${{ inputs.platform }}
+        APP: ${{ inputs.app }}
+        FLOW: ${{ inputs.flow }}
+        EMAIL: ${{ inputs.email }}
+        TIMEOUT: ${{ inputs.timeout }}
