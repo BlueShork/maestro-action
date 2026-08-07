@@ -1,5 +1,5 @@
 name: "MaestroDeck Cloud"
-description: "Run Maestro mobile tests on MaestroDeck Cloud (iOS or Android)"
+description: "Run Maestro tests on MaestroDeck Cloud (iOS, Android or Web)"
 author: "MaestroDeck"
 branding:
   icon: "smartphone"
@@ -10,11 +10,14 @@ inputs:
     description: "MaestroDeck API key (mk_live_...). Pass it via a GitHub secret."
     required: true
   platform:
-    description: "ios / android"
+    description: "ios / android / web"
     required: true
   app:
-    description: "Path to the .apk (ANDROID) or .app.zip (IOS)"
-    required: true
+    description: "Path to the .apk (ANDROID) or .app.zip (IOS). Required unless platform is web."
+    required: false
+  url:
+    description: "URL of the site to test, e.g. https://example.com. Required when platform is web."
+    required: false
   flow:
     description: "Path or glob the Maestro .yaml flows files"
     required: true
@@ -47,6 +50,7 @@ runs:
         API_KEY: ${{ inputs.api_key }}
         PLATFORM: ${{ inputs.platform }}
         APP: ${{ inputs.app }}
+        URL: ${{ inputs.url }}
         FLOW: ${{ inputs.flow }}
         EMAIL: ${{ inputs.email }}
         TIMEOUT: ${{ inputs.timeout }}

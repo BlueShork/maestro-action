@@ -12,13 +12,30 @@ if [[ -z "${API_KEY:-}" ]]; then
 fi
 
 PLATFORM="$(echo "${PLATFORM:-}" | tr '[:upper:]' '[:lower:]')"
-if [[ "$PLATFORM" != "ios" && "$PLATFORM" != "android" ]]; then
-    echo "::error::platform must be 'ios' or 'android' (got: '$PLATFORM')"
-    exit 1
-fi
-if [[ ! -f "$APP" ]]; then
-    echo "::error::app file not found: $APP"
-    exit 1
+case "$PLATFORM" in
+    ios | android | web) ;;
+    *)
+        echo "::error::platform must be 'ios', 'android' or 'web' (got: '$PLATFORM')"
+        exit 1
+        ;;
+esac
+
+# Le web n'a pas de fichier applicatif : la cible est une URL. Pour ios et
+# android le contrat est inchangé, l'app reste obligatoire.
+if [[ "$PLATFORM" == "web" ]]; then
+    if [[ -z "${URL:-}" ]]; then
+        echo "::error::url is required when platform is 'web'"
+        exit 1
+    fi
+else
+    if [[ -z "${APP:-}" ]]; then
+        echo "::error::app is required when platform is '$PLATFORM'"
+        exit 1
+    fi
+    if [[ ! -f "$APP" ]]; then
+        echo "::error::app file not found: $APP"
+        exit 1
+    fi
 fi
 
 FLOW_FILES=()
@@ -36,17 +53,22 @@ if [[ ${#FLOW_FILES[@]} -eq 0 ]]; then
 fi
 echo "Flows: ${FLOW_FILES[*]}"
 
-APP_NAME="$(basename "$APP")"
-
 yaml_names=()
 for f in "${FLOW_FILES[@]}"; do yaml_names+=("$(basename "$f")"); done
 yamls_json="$(printf '%s\n' "${yaml_names[@]}" | jq -R '{name: .}' | jq -s '.')"
 
+# La cible du job : une URL pour le web, le nom du fichier applicatif sinon.
+if [[ "$PLATFORM" == "web" ]]; then
+    init_target="$(jq -n --arg url "$URL" '{url: $url}')"
+else
+    init_target="$(jq -n --arg appname "$(basename "$APP")" '{apk: {name: $appname}}')"
+fi
+
 req="$(jq -n \
     --arg platform "$PLATFORM" \
-    --arg appname "$APP_NAME" \
+    --argjson target "$init_target" \
     --argjson yamls "$yamls_json" \
-    '{platform: $platform, apk: {name: $appname}, yamls: $yamls}')"
+    '{platform: $platform} + $target + {yamls: $yamls}')"
 
 echo "Initializing job..."
 init_resp="$(curl -fsS -X POST "$API_URL/api/jobs/init" \
@@ -58,10 +80,15 @@ JOB_ID="$(echo "$init_resp" | jq -r '.jobId')"
 report_url="$API_URL/runs/$JOB_ID"
 echo "Created job: $JOB_ID"
 
-echo "Uploading app..."
-apk_url="$(echo "$init_resp" | jq -r '.apk.uploadUrl')"
-apk_gs="$(echo "$init_resp" | jq -r '.apk.gsPath')"
-curl -fsS -X PUT -H "Content-Type: application/octet-stream" --upload-file "$APP" "$apk_url" >/dev/null
+apk_gs=""
+if [[ "$PLATFORM" == "web" ]]; then
+    echo "Target: $URL"
+else
+    echo "Uploading app..."
+    apk_url="$(echo "$init_resp" | jq -r '.apk.uploadUrl')"
+    apk_gs="$(echo "$init_resp" | jq -r '.apk.gsPath')"
+    curl -fsS -X PUT -H "Content-Type: application/octet-stream" --upload-file "$APP" "$apk_url" >/dev/null
+fi
 
 echo "Uploading flows..."
 yaml_count="$(echo "$init_resp" | jq '.yamls | length')"
@@ -72,13 +99,19 @@ done
 
 echo "Finalizing job..."
 yaml_paths_json="$(echo "$init_resp" | jq '[.yamls[].gsPath]')"
+if [[ "$PLATFORM" == "web" ]]; then
+    fin_target="$(jq -n --arg url "$URL" '{url: $url}')"
+else
+    fin_target="$(jq -n --arg apkPath "$apk_gs" '{apkPath: $apkPath}')"
+fi
+
 fin_req="$(jq -n \
     --arg jobId "$JOB_ID" \
-    --arg apkPath "$apk_gs" \
+    --argjson target "$fin_target" \
     --argjson yamlPaths "$yaml_paths_json" \
     --arg platform "$PLATFORM" \
     --arg email "${EMAIL:-}" \
-    '{jobId: $jobId, apkPath: $apkPath, yamlPaths: $yamlPaths, platform: $platform}
+    '{jobId: $jobId} + $target + {yamlPaths: $yamlPaths, platform: $platform}
      + (if $email == "" then {} else {email: $email} end)')"
 
 fin_resp="$(mktemp)"
