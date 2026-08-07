@@ -1,0 +1,36 @@
+url: https://www.nrj.fr/
+---
+- launchApp
+- runFlow:
+    when:
+      visible:
+        id: "didomi-notice-agree-button"
+    commands:
+      - tapOn:
+          id: "didomi-notice-agree-button"
+- waitForAnimationToEnd
+- assertVisible: "Le direct"
+- assertVisible: "Podcasts"
+- takeScreenshot: nrj-accueil
+- tapOn:
+    id: "Rechercher"
+- waitForAnimationToEnd
+- assertVisible: "Thématiques les plus recherchées"
+- takeScreenshot: nrj-recherche
+- tapOn:
+    text: "NRJ Music Awards"
+    index: 0
+- extendedWaitUntil:
+    visible: "Résultats pour votre recherche"
+    timeout: 10000
+- assertVisible: "NRJ Music Awards 2025"
+- takeScreenshot: nrj-resultats
+- tapOn:
+    text: "NRJ Music Awards 2025"
+    index: 0
+- extendedWaitUntil:
+    visible: "Palmarès"
+    timeout: 10000
+- assertVisible:
+    text: "Nommés"
+- takeScreenshot: nrj-music-awards

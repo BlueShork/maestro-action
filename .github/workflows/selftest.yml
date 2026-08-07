@@ -90,3 +90,33 @@ jobs:
               exit 1
               ;;
           esac
+
+  e2e-web:
+    name: end-to-end web run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Contrairement au job android ci-dessus, qui envoie un APK bidon et ne
+      # peut donc que constater un statut terminal, celui-ci lance un vrai
+      # parcours sur un vrai site : il doit finir "passed". C'est ce qui prouve
+      # que la chaîne web fonctionne réellement de bout en bout.
+      - name: run the action against a live site
+        id: maestro
+        continue-on-error: true
+        uses: ./
+        with:
+          api_key: ${{ secrets.MAESTRO_API_KEY }}
+          platform: web
+          url: https://www.nrj.fr/
+          flow: examples/web-nrj.yaml
+      - name: assert the web run passed
+        if: always()
+        run: |
+          echo "job_id=${{ steps.maestro.outputs.job_id }}"
+          echo "status=${{ steps.maestro.outputs.status }}"
+          echo "report_url=${{ steps.maestro.outputs.report_url }}"
+          if [[ "${{ steps.maestro.outputs.status }}" != "passed" ]]; then
+            echo "::error::expected the web run to pass, got '${{ steps.maestro.outputs.status }}'"
+            exit 1
+          fi
+          echo "web platform ran a live flow end-to-end and passed"
