@@ -12,6 +12,7 @@ if [[ -z "${API_KEY:-}" ]]; then
 fi
 
 PLATFORM="$(echo "${PLATFORM:-}" | tr '[:upper:]' '[:lower:]')"
+VISUAL_STRICT="$(echo "${VISUAL_STRICT:-false}" | tr '[:upper:]' '[:lower:]')"
 case "$PLATFORM" in
     ios | android | web) ;;
     *)
@@ -173,10 +174,11 @@ fin_req="$(jq -n \
     --arg email "${EMAIL:-}" \
     --arg appName "${APP_NAME:-}" \
     --argjson bankPaths "$bank_paths_json" \
+    --argjson visualStrict "$([[ "$VISUAL_STRICT" == "true" ]] && echo true || echo false)" \
     '{jobId: $jobId} + $target + {yamlPaths: $yamlPaths, platform: $platform}
      + (if $email == "" then {} else {email: $email} end)
      + (if $appName == "" then {} else {appName: $appName} end)
-     + (if ($bankPaths | length) > 0 then {bankPaths: $bankPaths} else {} end)')"
+     + (if ($bankPaths | length) > 0 then {bankPaths: $bankPaths, visualStrict: $visualStrict} else {} end)')"
 
 fin_resp="$(mktemp)"
 fin_code="$(curl -sS -o "$fin_resp" -w '%{http_code}' -X POST "$API_URL/api/jobs/finalize" \
@@ -246,7 +248,6 @@ if [[ "$status" != "passed" ]]; then
     exit 1
 fi
 
-VISUAL_STRICT="$(echo "${VISUAL_STRICT:-false}" | tr '[:upper:]' '[:lower:]')"
 if [[ "$VISUAL_STRICT" == "true" && "$visual_json" != "null" && $((visual_changed + visual_missing)) -gt 0 ]]; then
     echo "::error::visual regression detected ($visual_changed changed, $visual_missing missing) with visual_strict enabled"
     exit 1
