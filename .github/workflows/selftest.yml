@@ -159,4 +159,20 @@ jobs:
             echo "::error::expected numeric visual_changed/visual_missing outputs, the bank submission did not produce a visual report"
             exit 1
           fi
-          echo "web platform ran a live flow end-to-end, passed, and produced a visual report"
+          echo "outcome=${{ steps.maestro.outcome }}"
+          # visual_strict is "true" above: with any changed/missing image the
+          # step itself must have failed (continue-on-error is what lets us
+          # inspect it here), and with none it must have succeeded. Without
+          # this check the job stays green even when the action's own exit
+          # code says otherwise, which is exactly the gap that let a real
+          # regression pass silently before visual_strict existed.
+          if [[ $(( ${{ steps.maestro.outputs.visual_changed }} + ${{ steps.maestro.outputs.visual_missing }} )) -gt 0 ]]; then
+            if [[ "${{ steps.maestro.outcome }}" != "failure" ]]; then
+              echo "::error::expected the action step to fail with visual_strict enabled and a visual regression present, got outcome '${{ steps.maestro.outcome }}'"
+              exit 1
+            fi
+          elif [[ "${{ steps.maestro.outcome }}" != "success" ]]; then
+            echo "::error::expected the action step to succeed with visual_strict enabled and no visual regression, got outcome '${{ steps.maestro.outcome }}'"
+            exit 1
+          fi
+          echo "web platform ran a live flow end-to-end, passed, and produced a visual report, and visual_strict correctly gated the step outcome"
