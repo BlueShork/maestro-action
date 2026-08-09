@@ -102,6 +102,7 @@ jobs:
           platform: android
           app: app.apk
           flow: examples/smoke.yaml
+          visual_strict: "true"
       - name: assert the action ran end-to-end
         run: |
           echo "job_id=${{ steps.maestro.outputs.job_id }}"
@@ -141,6 +142,7 @@ jobs:
           flow: examples/web-nrj.yaml
           bank_path: examples/web-nrj-bank
           app_name: maestro-action-selftest
+          visual_strict: "true"
       - name: assert the web run passed
         if: always()
         run: |
