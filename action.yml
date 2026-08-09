@@ -28,6 +28,18 @@ inputs:
     description: "(optional) Max seconds to wait for the result"
     required: false
     default: "1800"
+  bank_path:
+    description: "(optional) Folder of reference .png images, relative to the repo root. Empty disables visual regression."
+    required: false
+    default: ""
+  app_name:
+    description: "(optional) Name under which to file the bank on the platform. Only meaningful when bank_path is set."
+    required: false
+    default: ""
+  visual_strict:
+    description: "(optional) Fail the step when the visual report shows a difference."
+    required: false
+    default: "false"
 
 outputs:
   job_id:
@@ -39,6 +51,12 @@ outputs:
   report_url:
     description: "Link to the report in the dashboard"
     value: ${{ steps.run.outputs.report_url }}
+  visual_changed:
+    description: "Number of bank images whose capture differs from the reference (empty when no bank was configured)"
+    value: ${{ steps.run.outputs.visual_changed }}
+  visual_missing:
+    description: "Number of bank images with no matching capture (empty when no bank was configured)"
+    value: ${{ steps.run.outputs.visual_missing }}
 
 runs:
   using: composite
@@ -54,3 +72,6 @@ runs:
         FLOW: ${{ inputs.flow }}
         EMAIL: ${{ inputs.email }}
         TIMEOUT: ${{ inputs.timeout }}
+        BANK_PATH: ${{ inputs.bank_path }}
+        APP_NAME: ${{ inputs.app_name }}
+        VISUAL_STRICT: ${{ inputs.visual_strict }}

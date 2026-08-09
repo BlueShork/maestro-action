@@ -3,7 +3,7 @@
 Run [Maestro](https://maestro.mobile.dev/) tests on [MaestroDeck Cloud](https://maestrodeck.cloud) from your CI, on **iOS, Android or Web**, with a single step. The build fails if the tests fail.
 
 ```yaml
-- uses: BlueShork/maestro-action@v1
+- uses: BlueShork/maestro-action@v3
   with:
     api_key: ${{ secrets.MAESTRO_API_KEY }}
     platform: android
@@ -16,6 +16,8 @@ Run [Maestro](https://maestro.mobile.dev/) tests on [MaestroDeck Cloud](https://
 The action uploads your app and flows to MaestroDeck Cloud, runs them on a real simulator/emulator, waits for the result, and exits `0` (passed) or `1` (failed/error). Android jobs dispatch instantly; iOS jobs run on the macOS worker pool. You get the same pipeline as the dashboard, triggered from CI.
 
 Web works the same way with one difference: there is no app to build or upload, so you pass `url` instead of `app` and the flows run against that site in a browser.
+
+Pass `bank_path` to also run visual regression: the action uploads every `.png` in that folder as the reference bank for the run, alongside the flows, and the platform compares each flow's `takeScreenshot` captures against it.
 
 ## Setup
 
@@ -34,6 +36,9 @@ Web works the same way with one difference: there is no app to build or upload, 
 | `flow` | yes | | Path or glob to your Maestro `.yaml` flow files, or a directory of them. |
 | `email` | no | account email | Send the report to a specific address instead of your account email. |
 | `timeout` | no | `1800` | Max seconds to wait for the result before giving up. Does not change the run's own server-side timeout. |
+| `bank_path` | no | `""` | Folder of reference `.png` images, relative to the repo root. Empty disables visual regression entirely. |
+| `app_name` | no | `""` | Name under which to file the bank on the platform (groups runs under `/apps` on the dashboard). Only meaningful when `bank_path` is set. |
+| `visual_strict` | no | `"false"` | Fail the step when the visual report shows a difference (`changed` or `missing` images). Never affects the run's own `status`, only this step's exit code. |
 
 ## Outputs
 
@@ -42,6 +47,8 @@ Web works the same way with one difference: there is no app to build or upload, 
 | `job_id` | The created job id. |
 | `status` | Final status: `passed`, `failed`, or `error`. |
 | `report_url` | Link to the full report in the dashboard. |
+| `visual_changed` | Number of bank images whose capture differs from the reference. Empty when `bank_path` was not set. |
+| `visual_missing` | Number of bank images with no matching capture. Empty when `bank_path` was not set. |
 
 ## Examples
 
@@ -56,7 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # ... build your APK into build/app-release.apk ...
-      - uses: BlueShork/maestro-action@v1
+      - uses: BlueShork/maestro-action@v3
         with:
           api_key: ${{ secrets.MAESTRO_API_KEY }}
           platform: android
@@ -67,7 +74,7 @@ jobs:
 ### iOS
 
 ```yaml
-- uses: BlueShork/maestro-action@v1
+- uses: BlueShork/maestro-action@v3
   with:
     api_key: ${{ secrets.MAESTRO_API_KEY }}
     platform: ios
@@ -87,7 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BlueShork/maestro-action@v1
+      - uses: BlueShork/maestro-action@v3
         with:
           api_key: ${{ secrets.MAESTRO_API_KEY }}
           platform: web
@@ -98,7 +105,7 @@ jobs:
 To test a preview deployment, feed it the URL your deploy step produced:
 
 ```yaml
-- uses: BlueShork/maestro-action@v1
+- uses: BlueShork/maestro-action@v3
   with:
     api_key: ${{ secrets.MAESTRO_API_KEY }}
     platform: web
@@ -106,10 +113,31 @@ To test a preview deployment, feed it the URL your deploy step produced:
     flow: .maestro/checkout.yaml
 ```
 
+### Visual regression
+
+```yaml
+- uses: BlueShork/maestro-action@v3
+  id: maestro
+  with:
+    api_key: ${{ secrets.MAESTRO_API_KEY }}
+    platform: web
+    url: https://example.com
+    flow: .maestro/
+    bank_path: .maestro/bank
+    app_name: my-app
+    visual_strict: "true"
+- if: always()
+  run: |
+    echo "changed: ${{ steps.maestro.outputs.visual_changed }}"
+    echo "missing: ${{ steps.maestro.outputs.visual_missing }}"
+```
+
+The bank is matched by filename against each flow's `takeScreenshot` captures. `visual_strict: "true"` fails this step (not the run's own `status`) when any capture changed or is missing; leave it `"false"` (the default) to only record the report without failing the build. When `bank_path` is empty, behavior is unchanged from before: no bank is sent, no visual comparison runs, `visual_strict` is a no-op, and the outputs are empty strings.
+
 ### Using the outputs
 
 ```yaml
-- uses: BlueShork/maestro-action@v1
+- uses: BlueShork/maestro-action@v3
   id: maestro
   with:
     api_key: ${{ secrets.MAESTRO_API_KEY }}
