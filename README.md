@@ -3,7 +3,7 @@
 Run [Maestro](https://maestro.mobile.dev/) tests on [MaestroDeck Cloud](https://maestrodeck.cloud) from your CI, on **iOS, Android or Web**, with a single step. The build fails if the tests fail.
 
 ```yaml
-- uses: BlueShork/maestro-action@v3
+- uses: BlueShork/maestro-action@v5
   with:
     api_key: ${{ secrets.MAESTRO_API_KEY }}
     platform: android
@@ -39,6 +39,7 @@ Pass `bank_path` to also run visual regression: the action uploads every `.png` 
 | `bank_path` | no | `""` | Folder of reference `.png` images, relative to the repo root. Empty disables visual regression entirely. |
 | `app_name` | no | `""` | Name under which to file the bank on the platform (groups runs under `/apps` on the dashboard). Only meaningful when `bank_path` is set. |
 | `visual_strict` | no | `"false"` | Fail the step when the visual report shows a difference (`changed` or `missing` images). Never affects the run's own `status`, only this step's exit code. |
+| `screen_size` | no | `""` | Browser size for web runs, as `{width}x{height}` in pixels (e.g. `1440x900`). Empty uses the platform default, `1512x982`. Width 320 to 3840, height 320 to 2160. Web only: sending it with `platform: ios` or `platform: android` fails the run with `SCREEN_SIZE_NOT_SUPPORTED`. |
 
 ## Outputs
 
@@ -63,7 +64,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # ... build your APK into build/app-release.apk ...
-      - uses: BlueShork/maestro-action@v3
+      - uses: BlueShork/maestro-action@v5
         with:
           api_key: ${{ secrets.MAESTRO_API_KEY }}
           platform: android
@@ -74,7 +75,7 @@ jobs:
 ### iOS
 
 ```yaml
-- uses: BlueShork/maestro-action@v3
+- uses: BlueShork/maestro-action@v5
   with:
     api_key: ${{ secrets.MAESTRO_API_KEY }}
     platform: ios
@@ -94,7 +95,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BlueShork/maestro-action@v3
+      - uses: BlueShork/maestro-action@v5
         with:
           api_key: ${{ secrets.MAESTRO_API_KEY }}
           platform: web
@@ -105,7 +106,7 @@ jobs:
 To test a preview deployment, feed it the URL your deploy step produced:
 
 ```yaml
-- uses: BlueShork/maestro-action@v3
+- uses: BlueShork/maestro-action@v5
   with:
     api_key: ${{ secrets.MAESTRO_API_KEY }}
     platform: web
@@ -113,10 +114,28 @@ To test a preview deployment, feed it the URL your deploy step produced:
     flow: .maestro/checkout.yaml
 ```
 
+### Browser size
+
+Web runs open the browser at `1512x982` by default. Set `screen_size` to test another viewport:
+
+```yaml
+- uses: BlueShork/maestro-action@v5
+  with:
+    api_key: ${{ secrets.MAESTRO_API_KEY }}
+    platform: web
+    url: https://example.com
+    flow: .maestro/
+    screen_size: 1440x900
+```
+
+This matters most alongside a bank: the platform refuses to compare two images of different dimensions and records the capture as `changed`. A bank captured at `1440x900` is only usable if the run opens at `1440x900`, so keep the two in step.
+
+The input is web-only. Sent with `platform: ios` or `platform: android`, the run is rejected with `SCREEN_SIZE_NOT_SUPPORTED` rather than silently ignored, so a mismatched bank never gets blamed on the wrong thing.
+
 ### Visual regression
 
 ```yaml
-- uses: BlueShork/maestro-action@v3
+- uses: BlueShork/maestro-action@v5
   id: maestro
   with:
     api_key: ${{ secrets.MAESTRO_API_KEY }}
@@ -137,7 +156,7 @@ The bank is matched by filename against each flow's `takeScreenshot` captures. `
 ### Using the outputs
 
 ```yaml
-- uses: BlueShork/maestro-action@v3
+- uses: BlueShork/maestro-action@v5
   id: maestro
   with:
     api_key: ${{ secrets.MAESTRO_API_KEY }}
