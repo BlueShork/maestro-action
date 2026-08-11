@@ -128,7 +128,7 @@ Web runs open the browser at `1512x982` by default. Set `screen_size` to test an
     screen_size: 1440x900
 ```
 
-This matters most alongside a bank: the platform refuses to compare two images of different dimensions and records the capture as `changed`. A bank captured at `1440x900` is only usable if the run opens at `1440x900`, so keep the two in step.
+This matters most alongside a bank: the platform refuses to compare two images of different dimensions and records the capture as `changed`. Note that `screen_size` sets the browser **window**, while a screenshot captures the **viewport** inside it, so captures come out shorter than the height you asked for (a run at `1200x762` yields captures around `1200x619`). Build the bank from the captures of a run at the size you intend to use, rather than from images sized to the value you pass here.
 
 The input is web-only. Sent with `platform: ios` or `platform: android`, the run is rejected with `SCREEN_SIZE_NOT_SUPPORTED` rather than silently ignored, so a mismatched bank never gets blamed on the wrong thing.
 
