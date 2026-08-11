@@ -118,14 +118,24 @@ req="$(jq -n \
     --argjson target "$init_target" \
     --argjson yamls "$yamls_json" \
     --argjson bank "$bank_json" \
+    --arg screenSize "${SCREEN_SIZE:-}" \
     '{platform: $platform} + $target + {yamls: $yamls}
-     + (if ($bank | length) > 0 then {bank: $bank} else {} end)')"
+     + (if ($bank | length) > 0 then {bank: $bank} else {} end)
+     + (if $screenSize == "" then {} else {screenSize: $screenSize} end)')"
 
 echo "Initializing job..."
-init_resp="$(curl -fsS -X POST "$API_URL/api/jobs/init" \
+init_body="$(mktemp)"
+init_code="$(curl -sS -o "$init_body" -w '%{http_code}' -X POST "$API_URL/api/jobs/init" \
     -H "X-API-Key: $API_KEY" \
     -H "Content-Type: application/json" \
     -d "$req")"
+if [[ "$init_code" != "200" ]]; then
+    code="$(jq -r '.error // "unknown"' "$init_body" 2>/dev/null || echo unknown)"
+    msg="$(jq -r '.message // ""' "$init_body" 2>/dev/null || echo "")"
+    echo "::error::init failed (HTTP $init_code, $code)${msg:+: $msg}"
+    exit 1
+fi
+init_resp="$(cat "$init_body")"
 
 JOB_ID="$(echo "$init_resp" | jq -r '.jobId')"
 report_url="$API_URL/runs/$JOB_ID"
@@ -175,10 +185,12 @@ fin_req="$(jq -n \
     --arg appName "${APP_NAME:-}" \
     --argjson bankPaths "$bank_paths_json" \
     --argjson visualStrict "$([[ "$VISUAL_STRICT" == "true" ]] && echo true || echo false)" \
+    --arg screenSize "${SCREEN_SIZE:-}" \
     '{jobId: $jobId} + $target + {yamlPaths: $yamlPaths, platform: $platform}
      + (if $email == "" then {} else {email: $email} end)
      + (if $appName == "" then {} else {appName: $appName} end)
-     + (if ($bankPaths | length) > 0 then {bankPaths: $bankPaths, visualStrict: $visualStrict} else {} end)')"
+     + (if ($bankPaths | length) > 0 then {bankPaths: $bankPaths, visualStrict: $visualStrict} else {} end)
+     + (if $screenSize == "" then {} else {screenSize: $screenSize} end)')"
 
 fin_resp="$(mktemp)"
 fin_code="$(curl -sS -o "$fin_resp" -w '%{http_code}' -X POST "$API_URL/api/jobs/finalize" \

@@ -40,6 +40,10 @@ inputs:
     description: "(optional) Fail the step when the visual report shows a difference."
     required: false
     default: "false"
+  screen_size:
+    description: "(optional) Browser size for web runs, as {width}x{height} in pixels (e.g. 1440x900). Empty uses the platform default, 1512x982. Web only."
+    required: false
+    default: ""
 
 outputs:
   job_id:
@@ -75,3 +79,4 @@ runs:
         BANK_PATH: ${{ inputs.bank_path }}
         APP_NAME: ${{ inputs.app_name }}
         VISUAL_STRICT: ${{ inputs.visual_strict }}
+        SCREEN_SIZE: ${{ inputs.screen_size }}
