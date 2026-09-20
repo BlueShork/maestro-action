@@ -10,10 +10,10 @@ inputs:
     description: "MaestroDeck API key (mk_live_...). Pass it via a GitHub secret."
     required: true
   platform:
-    description: "ios / android / web"
+    description: "ios / android / android_physical / web"
     required: true
   app:
-    description: "Path to the .apk (ANDROID) or .app.zip (IOS). Required unless platform is web."
+    description: "Path to the .apk (ANDROID / ANDROID_PHYSICAL) or .app.zip (IOS). Required unless platform is web."
     required: false
   url:
     description: "URL of the site to test, e.g. https://example.com. Required when platform is web."

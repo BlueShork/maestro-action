@@ -1,6 +1,6 @@
 # MaestroDeck Cloud Action
 
-Run [Maestro](https://maestro.mobile.dev/) tests on [MaestroDeck Cloud](https://maestrodeck.cloud) from your CI, on **iOS, Android or Web**, with a single step. The build fails if the tests fail.
+Run [Maestro](https://maestro.mobile.dev/) tests on [MaestroDeck Cloud](https://maestrodeck.cloud) from your CI, on **iOS, Android (emulator or physical device), or Web**, with a single step. The build fails if the tests fail.
 
 ```yaml
 - uses: BlueShork/maestro-action@v5
@@ -13,7 +13,7 @@ Run [Maestro](https://maestro.mobile.dev/) tests on [MaestroDeck Cloud](https://
 
 ## How it works
 
-The action uploads your app and flows to MaestroDeck Cloud, runs them on a real simulator/emulator, waits for the result, and exits `0` (passed) or `1` (failed/error). Android jobs dispatch instantly; iOS jobs run on the macOS worker pool. You get the same pipeline as the dashboard, triggered from CI.
+The action uploads your app and flows to MaestroDeck Cloud, runs them on a real simulator/emulator, waits for the result, and exits `0` (passed) or `1` (failed/error). Android jobs dispatch instantly; iOS and `android_physical` jobs run on a pull-based worker pool (macOS workers for iOS, physical Android devices for `android_physical`) — they start as soon as a worker/device is free rather than dispatching instantly, so budget more time in `timeout` if your physical device pool is small or busy. You get the same pipeline as the dashboard, triggered from CI.
 
 Web works the same way with one difference: there is no app to build or upload, so you pass `url` instead of `app` and the flows run against that site in a browser.
 
@@ -30,8 +30,8 @@ Pass `bank_path` to also run visual regression: the action uploads every `.png` 
 | Input | Required | Default | Description |
 |---|---|---|---|
 | `api_key` | yes | | Your MaestroDeck API key (`mk_live_...`). Always pass it via a secret. |
-| `platform` | yes | | `ios`, `android` or `web`. |
-| `app` | for `ios`/`android` | | Path to the `.apk` (Android) or `.app.zip` (iOS). Ignored when `platform: web`. |
+| `platform` | yes | | `ios`, `android`, `android_physical` or `web`. |
+| `app` | for `ios`/`android`/`android_physical` | | Path to the `.apk` (Android/`android_physical`) or `.app.zip` (iOS). Ignored when `platform: web`. |
 | `url` | for `web` | | URL of the site to test, e.g. `https://example.com`. Must be reachable from the public internet. |
 | `flow` | yes | | Path or glob to your Maestro `.yaml` flow files, or a directory of them. |
 | `email` | no | account email | Send the report to a specific address instead of your account email. |
@@ -39,7 +39,7 @@ Pass `bank_path` to also run visual regression: the action uploads every `.png` 
 | `bank_path` | no | `""` | Folder of reference `.png` images, relative to the repo root. Empty disables visual regression entirely. |
 | `app_name` | no | `""` | Name under which to file the bank on the platform (groups runs under `/apps` on the dashboard). Only meaningful when `bank_path` is set. |
 | `visual_strict` | no | `"false"` | Fail the step when the visual report shows a difference (`changed` or `missing` images). Never affects the run's own `status`, only this step's exit code. |
-| `screen_size` | no | `""` | Browser size for web runs, as `{width}x{height}` in pixels (e.g. `1440x900`). Empty uses the platform default, `1512x982`. Width 320 to 3840, height 320 to 2160. Web only: sending it with `platform: ios` or `platform: android` fails the run with `SCREEN_SIZE_NOT_SUPPORTED`. |
+| `screen_size` | no | `""` | Browser size for web runs, as `{width}x{height}` in pixels (e.g. `1440x900`). Empty uses the platform default, `1512x982`. Width 320 to 3840, height 320 to 2160. Web only: sending it with any non-web `platform` fails the run with `SCREEN_SIZE_NOT_SUPPORTED`. |
 
 ## Outputs
 

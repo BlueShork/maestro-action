@@ -14,9 +14,9 @@ fi
 PLATFORM="$(echo "${PLATFORM:-}" | tr '[:upper:]' '[:lower:]')"
 VISUAL_STRICT="$(echo "${VISUAL_STRICT:-false}" | tr '[:upper:]' '[:lower:]')"
 case "$PLATFORM" in
-    ios | android | web) ;;
+    ios | android | android_physical | web) ;;
     *)
-        echo "::error::platform must be 'ios', 'android' or 'web' (got: '$PLATFORM')"
+        echo "::error::platform must be 'ios', 'android', 'android_physical' or 'web' (got: '$PLATFORM')"
         exit 1
         ;;
 esac
