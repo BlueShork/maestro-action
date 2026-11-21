@@ -87,7 +87,10 @@ if [[ ${#BANK_FILES[@]} -gt 200 ]]; then
     exit 1
 fi
 
-declare -A seen_sanitized
+# Pas de tableau associatif (declare -A) : bash 3.2, celui des runners macOS,
+# ne le connait pas. Deux tableaux paralleles suffisent pour 200 images.
+seen_sanitized=()
+seen_original=()
 bank_names=()
 bank_sizes=()
 for f in "${BANK_FILES[@]}"; do
@@ -98,11 +101,14 @@ for f in "${BANK_FILES[@]}"; do
         exit 1
     fi
     sanitized="$(echo -n "$name" | sed -E 's/[^a-zA-Z0-9._-]/_/g')"
-    if [[ -n "${seen_sanitized[$sanitized]:-}" ]]; then
-        echo "::error::bank images collide once sanitized: $name and ${seen_sanitized[$sanitized]}"
-        exit 1
-    fi
-    seen_sanitized[$sanitized]="$name"
+    for i in "${!seen_sanitized[@]}"; do
+        if [[ "${seen_sanitized[$i]}" == "$sanitized" ]]; then
+            echo "::error::bank images collide once sanitized: $name and ${seen_original[$i]}"
+            exit 1
+        fi
+    done
+    seen_sanitized+=("$sanitized")
+    seen_original+=("$name")
     bank_names+=("$name")
     bank_sizes+=("$size")
 done
