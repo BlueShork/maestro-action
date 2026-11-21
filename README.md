@@ -3,7 +3,7 @@
 Run [Maestro](https://maestro.mobile.dev/) tests on [MaestroDeck Cloud](https://maestrodeck.cloud) from your CI, on **iOS, Android (emulator or physical device), or Web**, with a single step. The build fails if the tests fail.
 
 ```yaml
-- uses: BlueShork/maestro-action@v5
+- uses: BlueShork/maestro-action@v7
   with:
     api_key: ${{ secrets.MAESTRO_API_KEY }}
     platform: android
@@ -64,7 +64,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # ... build your APK into build/app-release.apk ...
-      - uses: BlueShork/maestro-action@v5
+      - uses: BlueShork/maestro-action@v7
         with:
           api_key: ${{ secrets.MAESTRO_API_KEY }}
           platform: android
@@ -75,7 +75,7 @@ jobs:
 ### iOS
 
 ```yaml
-- uses: BlueShork/maestro-action@v5
+- uses: BlueShork/maestro-action@v7
   with:
     api_key: ${{ secrets.MAESTRO_API_KEY }}
     platform: ios
@@ -108,7 +108,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: BlueShork/maestro-action@v5
+      - uses: BlueShork/maestro-action@v7
         with:
           api_key: ${{ secrets.MAESTRO_API_KEY }}
           platform: web
@@ -119,7 +119,7 @@ jobs:
 To test a preview deployment, feed it the URL your deploy step produced:
 
 ```yaml
-- uses: BlueShork/maestro-action@v5
+- uses: BlueShork/maestro-action@v7
   with:
     api_key: ${{ secrets.MAESTRO_API_KEY }}
     platform: web
@@ -132,7 +132,7 @@ To test a preview deployment, feed it the URL your deploy step produced:
 Web runs open the browser at `1512x982` by default. Set `screen_size` to test another viewport:
 
 ```yaml
-- uses: BlueShork/maestro-action@v5
+- uses: BlueShork/maestro-action@v7
   with:
     api_key: ${{ secrets.MAESTRO_API_KEY }}
     platform: web
@@ -148,7 +148,7 @@ The input is web-only. Sent with `platform: ios` or `platform: android`, the run
 ### Visual regression
 
 ```yaml
-- uses: BlueShork/maestro-action@v5
+- uses: BlueShork/maestro-action@v7
   id: maestro
   with:
     api_key: ${{ secrets.MAESTRO_API_KEY }}
@@ -169,7 +169,7 @@ The bank is matched by filename against each flow's `takeScreenshot` captures. `
 ### Using the outputs
 
 ```yaml
-- uses: BlueShork/maestro-action@v5
+- uses: BlueShork/maestro-action@v7
   id: maestro
   with:
     api_key: ${{ secrets.MAESTRO_API_KEY }}
