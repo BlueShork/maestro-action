@@ -14,9 +14,9 @@ fi
 PLATFORM="$(echo "${PLATFORM:-}" | tr '[:upper:]' '[:lower:]')"
 VISUAL_STRICT="$(echo "${VISUAL_STRICT:-false}" | tr '[:upper:]' '[:lower:]')"
 case "$PLATFORM" in
-    ios | android | android_physical | web) ;;
+    ios | android | android_physical | ios_physical | web) ;;
     *)
-        echo "::error::platform must be 'ios', 'android', 'android_physical' or 'web' (got: '$PLATFORM')"
+        echo "::error::platform must be 'ios', 'android', 'android_physical', 'ios_physical' or 'web' (got: '$PLATFORM')"
         exit 1
         ;;
 esac
@@ -35,6 +35,17 @@ else
     fi
     if [[ ! -f "$APP" ]]; then
         echo "::error::app file not found: $APP"
+        exit 1
+    fi
+    # Un iPhone réel installe une IPA (build appareil) ; le simulateur un .app
+    # zippé. La plateforme refuse le mauvais format, on le dit avant l'upload.
+    app_lower="$(echo "$APP" | tr '[:upper:]' '[:lower:]')"
+    if [[ "$PLATFORM" == "ios_physical" && "$app_lower" != *.ipa ]]; then
+        echo "::error::platform 'ios_physical' needs an .ipa (a device build), got: $APP"
+        exit 1
+    fi
+    if [[ "$PLATFORM" == "ios" && "$app_lower" == *.ipa ]]; then
+        echo "::error::platform 'ios' needs a zipped .app simulator build, not an .ipa (use platform 'ios_physical' for a real iPhone)"
         exit 1
     fi
 fi

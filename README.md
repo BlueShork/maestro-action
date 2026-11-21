@@ -13,7 +13,7 @@ Run [Maestro](https://maestro.mobile.dev/) tests on [MaestroDeck Cloud](https://
 
 ## How it works
 
-The action uploads your app and flows to MaestroDeck Cloud, runs them on a real simulator/emulator, waits for the result, and exits `0` (passed) or `1` (failed/error). Android jobs dispatch instantly; iOS and `android_physical` jobs run on a pull-based worker pool (macOS workers for iOS, physical Android devices for `android_physical`) — they start as soon as a worker/device is free rather than dispatching instantly, so budget more time in `timeout` if your physical device pool is small or busy. You get the same pipeline as the dashboard, triggered from CI.
+The action uploads your app and flows to MaestroDeck Cloud, runs them on a real simulator/emulator, waits for the result, and exits `0` (passed) or `1` (failed/error). Android jobs dispatch instantly; iOS, `android_physical` and `ios_physical` jobs run on a pull-based worker pool (macOS workers for iOS, physical Android devices for `android_physical`, real iPhones for `ios_physical`) — they start as soon as a worker/device is free rather than dispatching instantly, so budget more time in `timeout` if your physical device pool is small or busy. You get the same pipeline as the dashboard, triggered from CI.
 
 Web works the same way with one difference: there is no app to build or upload, so you pass `url` instead of `app` and the flows run against that site in a browser.
 
@@ -30,8 +30,8 @@ Pass `bank_path` to also run visual regression: the action uploads every `.png` 
 | Input | Required | Default | Description |
 |---|---|---|---|
 | `api_key` | yes | | Your MaestroDeck API key (`mk_live_...`). Always pass it via a secret. |
-| `platform` | yes | | `ios`, `android`, `android_physical` or `web`. |
-| `app` | for `ios`/`android`/`android_physical` | | Path to the `.apk` (Android/`android_physical`) or `.app.zip` (iOS). Ignored when `platform: web`. |
+| `platform` | yes | | `ios`, `android`, `android_physical`, `ios_physical` or `web`. |
+| `app` | for `ios`/`android`/`android_physical`/`ios_physical` | | Path to the `.apk` (Android/`android_physical`), `.app.zip` (iOS simulator) or `.ipa` (`ios_physical`). Ignored when `platform: web`. |
 | `url` | for `web` | | URL of the site to test, e.g. `https://example.com`. Must be reachable from the public internet. |
 | `flow` | yes | | Path or glob to your Maestro `.yaml` flow files, or a directory of them. |
 | `email` | no | account email | Send the report to a specific address instead of your account email. |
@@ -80,6 +80,19 @@ jobs:
     api_key: ${{ secrets.MAESTRO_API_KEY }}
     platform: ios
     app: build/MyApp.app.zip
+    flow: .maestro/login.yaml
+```
+
+### Real iPhone (`ios_physical`)
+
+Send an `.ipa` (a device build: development, ad hoc or exported for TestFlight). The platform re-signs it for its own iPhones, so capabilities tied to your team (push notifications, App Groups, iCloud, associated domains) are not kept. A simulator `.app.zip` is refused.
+
+```yaml
+- uses: BlueShork/maestro-action@v7
+  with:
+    api_key: ${{ secrets.MAESTRO_API_KEY }}
+    platform: ios_physical
+    app: build/MyApp.ipa
     flow: .maestro/login.yaml
 ```
 
