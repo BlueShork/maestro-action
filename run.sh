@@ -93,7 +93,8 @@ seen_sanitized=()
 seen_original=()
 bank_names=()
 bank_sizes=()
-for f in "${BANK_FILES[@]}"; do
+# ${a[@]+"${a[@]}"} : bash 3.2 avec set -u refuse "${a[@]}" sur un tableau vide.
+for f in ${BANK_FILES[@]+"${BANK_FILES[@]}"}; do
     name="$(basename "$f")"
     size="$(wc -c <"$f" | tr -d ' ')"
     if [[ "$size" -gt 10485760 ]]; then
@@ -101,7 +102,7 @@ for f in "${BANK_FILES[@]}"; do
         exit 1
     fi
     sanitized="$(echo -n "$name" | sed -E 's/[^a-zA-Z0-9._-]/_/g')"
-    for i in "${!seen_sanitized[@]}"; do
+    for i in ${seen_sanitized[@]+"${!seen_sanitized[@]}"}; do
         if [[ "${seen_sanitized[$i]}" == "$sanitized" ]]; then
             echo "::error::bank images collide once sanitized: $name and ${seen_original[$i]}"
             exit 1
